@@ -44,8 +44,8 @@ Then open `http://localhost:3000`. Everything already works.
 ### Make it yours, in three edits
 
 1. **`agent.config.ts`** — product name, canonical host, scope vocabulary, tiers.
-2. **`lib/room.ts`** — delete it. This is the demo domain. Put your product here.
-3. **`lib/mcp/tools.ts`** — your tools. Keep at least one with `scope: null` (see below).
+2. **`lib/room.ts`** — replace its contents with your product's data layer. Do not delete the file: it is the demo domain, but `lib/mcp/tools.ts`, `app/api/mcp/route.ts`, `app/api/v1/posts/route.ts`, `app/api/v1/agents/route.ts`, `app/api/a2a/[agent]/route.ts`, `app/api/a2a/[agent]/.well-known/agent-card.json/route.ts`, `app/index.md/route.ts` and `app/page.tsx` all import it, so removing it breaks the build. Keep or rename its exports, then update those importers.
+3. **`lib/mcp/tools.ts`** — your tools. Keep at least one with `scope: null` (see below). Tool names are read from this file by the MCP server, WebMCP and `scripts/verify.sh`; if you rename them, also `grep -rn floor_ app/` for the two prose mentions left in `app/llms.txt/route.ts` and `app/auth.md/route.ts`.
 
 Everything else keeps working, because it reads from step 1 rather than from your feature code.
 
