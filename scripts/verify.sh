@@ -4,15 +4,41 @@
 #
 # Every check here is something a grader or a real agent actually reads. None of
 # them trust a config file; they all read the wire.
+#
+# PASS / WARN / FAIL. Only FAIL exits non-zero. WARN means "works, but you have
+# not finished making it yours or production-ready" (placeholder contact, memory
+# storage, default canonical host). A WARN always prints its fix.
+#
+# Nothing here depends on the example app: the REST checks are derived from the
+# site's own /openapi.json, so replacing the room demo with your product does
+# not break verify. It is a superset of the workshop's online checker (durable
+# storage, MCP discovery, A2A reachability), so a green run here is not weaker.
 set -u
 PY=$(command -v python3 || command -v python) || { echo "verify.sh needs python3"; exit 2; }
 B="${1:-http://localhost:3000}"
-PASS=0; FAIL=0
+PASS=0; FAIL=0; WARN=0
 
 ok()   { printf '  PASS  %s\n' "$1"; PASS=$((PASS+1)); }
 bad()  { printf '  FAIL  %s\n' "$1"; FAIL=$((FAIL+1)); }
+warn() { printf '  WARN  %s\n' "$1"; WARN=$((WARN+1)); }
+skip() { printf '  skip  %s\n' "$1"; }
 
-check_json() { # url, jq-ish python expr, label
+# -s, not -sf: some documents (health) legitimately answer 503 with a body
+# worth reading.
+json_get() { curl -s "$B$1" 2>/dev/null; }
+
+# JSON on stdin, a python snippet using `d`; prints whatever the snippet prints.
+# A parse failure or exception prints nothing, so callers test for empty output.
+py_json() {
+  "$PY" -c 'import json,sys
+try:
+    d=json.load(sys.stdin)
+    exec(sys.argv[1])
+except Exception:
+    sys.exit(3)' "$1" 2>/dev/null | tr -d '\015'
+}
+
+check_json() { # url, python expr over d, label
   local body; body=$(curl -sf "$B$1" 2>/dev/null) || { bad "$3 (fetch failed)"; return; }
   if echo "$body" | "$PY" -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if ($2) else 1)" 2>/dev/null; then
     ok "$3"
@@ -76,19 +102,120 @@ else
   bad "no gated tool in tools/list to check the 401 against"
 fi
 
+# Annotations + schemas: what a client reads to decide what it may auto-approve.
+BADTOOLS=$(echo "$TL" | py_json "
+hints=('readOnlyHint','destructiveHint','idempotentHint','openWorldHint')
+bad=[x['name'] for x in d['result']['tools'] if not all(isinstance(x.get('annotations',{}).get(h),bool) for h in hints) or x.get('inputSchema',{}).get('type')!='object']
+print(','.join(bad) or 'none')")
+if [ "$BADTOOLS" = "none" ]; then ok "every tool declares all four annotations and an object inputSchema"; else bad "tools missing annotations or inputSchema: ${BADTOOLS:-unreadable tools/list}"; fi
+
+# MCP discovery: mcp.json, the server card and the server itself must agree.
+MURL=$(json_get "/.well-known/mcp.json" | py_json "print(d['servers'][0]['url'])")
+MPATH=$(echo "$MURL" | sed -E 's#^https?://[^/]+##')
+if [ -n "$MPATH" ]; then
+  INIT=$(curl -s -X POST "$B$MPATH" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":9,"method":"initialize","params":{}}' 2>/dev/null)
+  if [ -n "$(echo "$INIT" | py_json "print(d['result']['serverInfo']['name'])")" ]; then
+    ok "MCP discovery: mcp.json -> $MPATH answers initialize"
+  else
+    bad "MCP discovery: mcp.json points at $MPATH but initialize does not answer there"
+  fi
+else
+  bad "MCP discovery: mcp.json lists no server url"
+fi
+SCN=$(json_get "/.well-known/mcp/server-card.json" | py_json "print(len(d['tools']))")
+TLN=$(echo "$TL" | py_json "print(len(d['result']['tools']))")
+if [ -n "$SCN" ] && [ "$SCN" = "$TLN" ]; then ok "MCP server card lists the same $SCN tools as tools/list"; else bad "MCP server card missing or disagrees with tools/list (card=${SCN:-none} list=${TLN:-none})"; fi
+
+# Every advertised scope must be required by some tool, or the vocabulary
+# promises a permission nothing enforces.
+SCOPES=$(json_get "/.well-known/oauth-protected-resource" | py_json "print(' '.join(d.get('scopes_supported',[])))")
+USED=$(echo "$TL" | py_json "print(' '.join(x.get('_meta',{}).get('requiredScope','') for x in d['result']['tools']))")
+UNUSED=""
+for S in $SCOPES; do case " $USED " in *" $S "*) ;; *) UNUSED="$UNUSED $S" ;; esac; done
+if [ -z "$UNUSED" ]; then ok "every advertised scope is required by at least one tool"; else warn "advertised scopes no tool requires:$UNUSED (remove them from scopes in agent.config.ts, or use them)"; fi
+
+# A2A: a card that validates is not an endpoint that exists. Call what it advertises.
+AURL=$(json_get "/.well-known/agent-card.json" | py_json "print(d.get('url',''))")
+APATH=$(echo "$AURL" | sed -E 's#^https?://[^/]+##')
+if [ -n "$APATH" ]; then
+  AOUT=$(curl -s -w '\n%{http_code}' -X POST "$B$APATH" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"agent/getCard"}' 2>/dev/null)
+  ACODE=$(echo "$AOUT" | tail -1); ABODY=$(echo "$AOUT" | sed '$d')
+  if [ "$ACODE" != "404" ] && [ "$ACODE" != "405" ] && [ "$(echo "$ABODY" | py_json "print(d.get('jsonrpc',''))")" = "2.0" ]; then
+    ok "A2A: the card's url ($APATH) answers JSON-RPC (HTTP $ACODE)"
+  else
+    bad "A2A: the card advertises $APATH but it does not answer JSON-RPC (HTTP $ACODE). Build the endpoint or stop advertising it"
+  fi
+else
+  skip "A2A: the card advertises no url"
+fi
+
+echo
+echo "Layer 5 - Operations"
+STORE=$(json_get "/api/v1/health" | py_json "print(d.get('storage',''))")
+case "$STORE" in
+  kv) ok "durable storage: KV configured" ;;
+  "") bad "health: /api/v1/health did not return a storage field" ;;
+  *) warn "storage is '$STORE': writes will not survive between serverless invocations. Set KV_REST_API_URL and KV_REST_API_TOKEN before you deploy for real" ;;
+esac
+
 echo
 echo "Layer 6 - API as product"
 check_json  "/openapi.json" "d.get('openapi','').startswith('3.') and len(d.get('paths',{}))>0" "OpenAPI 3.x with paths"
-check_json  "/api/v1/posts" "'data' in d" "GET /api/v1/posts is TOKENLESS"
-PJ=$(curl -s -X POST "$B/api/v1/posts" -H 'content-type: application/json' -d '{"text":"x"}')
-if echo "$PJ" | "$PY" -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('remedy') else 1)" 2>/dev/null; then
-  ok "errors carry a remedy field"
+
+# REST checks come from the site's own spec, never from a hardcoded example
+# route: replace the demo with your product and these follow it.
+OA=$(json_get "/openapi.json")
+BASE=$(echo "$OA" | py_json "print(d['servers'][0]['url'])" | sed -E 's#^https?://[^/]+##')
+TOKENLESS=$(echo "$OA" | py_json "
+for path,item in d.get('paths',{}).items():
+    op=item.get('get')
+    if not op or path.endswith('/health') or 'servers' in item: continue
+    if {} not in op.get('security',d.get('security',[])): continue
+    if any(p.get('required') for p in op.get('parameters',[]) if 'in' in p): continue
+    print(path)" | head -3)
+if [ -z "$TOKENLESS" ]; then
+  skip "tokenless REST read: skipped, the spec has no tokenless GET route without required params"
 else
-  bad "errors have no remedy - agents will retry forever"
+  for P in $TOKENLESS; do
+    CODE=$(curl -s -o /dev/null -w '%{http_code}' "$B$BASE$P")
+    if [ "$CODE" = "200" ]; then ok "GET $BASE$P is TOKENLESS (from openapi.json)"; else bad "GET $BASE$P is declared tokenless in openapi.json but answered HTTP $CODE"; fi
+  done
 fi
-RL=$(curl -s -D- -o /dev/null "$B/api/v1/posts" | grep -ci 'ratelimit' || true)
+
+GATEDPOST=$(echo "$OA" | py_json "
+for path,item in d.get('paths',{}).items():
+    op=item.get('post')
+    if op and 'servers' not in item and op.get('requestBody') and {'bearerAuth':[]} in op.get('security',[]):
+        print(path); break")
+if [ -z "$GATEDPOST" ]; then
+  skip "error remedy: skipped, the spec has no bearer-protected POST route"
+else
+  if [ -n "$(curl -s -X POST "$B$BASE$GATEDPOST" -H 'content-type: application/json' -d '{}' | py_json "print(d.get('remedy',''))")" ]; then
+    ok "errors carry a remedy field (POST $BASE$GATEDPOST, no token)"
+  else
+    bad "errors have no remedy (POST $BASE$GATEDPOST) - agents will retry forever"
+  fi
+fi
 echo "  note  RateLimit-* headers appear on authenticated writes, not public reads"
 
 echo
-printf 'PASS %s   FAIL %s\n' "$PASS" "$FAIL"
+echo "Layer 7 - Made yours"
+CONTACT=$(json_get "/.well-known/ai-agent.json" | py_json "print(d.get('contact',''))")
+case "$CONTACT" in
+  ""|*TODO-*|*@example.com|*@example.org) warn "contact is still a placeholder (${CONTACT:-empty}): set product.contact in agent.config.ts" ;;
+  *) ok "contact is set ($CONTACT)" ;;
+esac
+RES=$(json_get "/.well-known/oauth-protected-resource" | py_json "print(d.get('resource','').rstrip('/'))")
+BNORM="${B%/}"
+if [ "$RES" = "$BNORM" ]; then
+  ok "discovery documents reference this origin ($RES)"
+else
+  case "$RES" in
+    *agent-native-kit.vercel.app*) warn "discovery documents point at $RES, the kit's default, not $BNORM. Set hosts.canonical to your real domain, add this host (with port) to hosts.allowed, and rebuild" ;;
+    *) warn "discovery documents point at ${RES:-nothing} but you verified $BNORM. If $BNORM is meant to be served, add its host (with port) to hosts.allowed in agent.config.ts and rebuild" ;;
+  esac
+fi
+
+echo
+printf 'PASS %s   WARN %s   FAIL %s\n' "$PASS" "$WARN" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
