@@ -56,11 +56,25 @@ else
   bad "tools/list is empty or gated - your execution surface is invisible"
 fi
 
-AC=$(curl -sf -X POST "$B/api/mcp" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"floor_overview","arguments":{}}}' 2>/dev/null)
-if echo "$AC" | grep -q '"result"'; then ok "a token-free tool actually executes with no auth"; else bad "no token-free tool executes"; fi
+# Tool names come from the live tools/list, not from this script: a tool with no
+# _meta.requiredScope is token-free; one with it is gated. Renaming tools in
+# lib/mcp/tools.ts therefore needs no edit here.
+FREE_TOOL=$(echo "$TL" | "$PY" -c "import json,sys; t=json.load(sys.stdin)['result']['tools']; f=[x['name'] for x in t if not x.get('_meta',{}).get('requiredScope')]; print(f[0] if f else '')" 2>/dev/null)
+GATED_TOOL=$(echo "$TL" | "$PY" -c "import json,sys; t=json.load(sys.stdin)['result']['tools']; f=[x['name'] for x in t if x.get('_meta',{}).get('requiredScope')]; print(f[0] if f else '')" 2>/dev/null)
 
-WWW=$(curl -s -D- -o /dev/null -X POST "$B/api/mcp" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"floor_post","arguments":{"text":"x"}}}' | grep -ci 'www-authenticate' || true)
-if [ "${WWW:-0}" -gt 0 ]; then ok "401 carries WWW-Authenticate pointing at PRM"; else bad "401 has no WWW-Authenticate - strict clients cannot discover auth"; fi
+if [ -n "$FREE_TOOL" ]; then
+  AC=$(curl -sf -X POST "$B/api/mcp" -H 'content-type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"$FREE_TOOL\",\"arguments\":{}}}" 2>/dev/null)
+  if echo "$AC" | grep -q '"result"'; then ok "a token-free tool ($FREE_TOOL) actually executes with no auth"; else bad "token-free tool $FREE_TOOL did not execute"; fi
+else
+  bad "no token-free tool in tools/list"
+fi
+
+if [ -n "$GATED_TOOL" ]; then
+  WWW=$(curl -s -D- -o /dev/null -X POST "$B/api/mcp" -H 'content-type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"$GATED_TOOL\",\"arguments\":{}}}" | grep -ci 'www-authenticate' || true)
+  if [ "${WWW:-0}" -gt 0 ]; then ok "401 on $GATED_TOOL carries WWW-Authenticate pointing at PRM"; else bad "401 has no WWW-Authenticate - strict clients cannot discover auth"; fi
+else
+  bad "no gated tool in tools/list to check the 401 against"
+fi
 
 echo
 echo "Layer 6 - API as product"
