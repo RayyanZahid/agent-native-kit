@@ -37,6 +37,7 @@ export function GET(req: Request) {
       interface: "mcp",
       endpoint: `${origin}${agentConfig.mcp.path}`,
       url: `${origin}${agentConfig.mcp.path}`,
+      card: `${origin}/.well-known/mcp/server-card.json`,
       auth_required: t.scope !== null,
       ...(t.scope ? { scope: t.scope } : {}),
     })),
@@ -49,10 +50,11 @@ export function GET(req: Request) {
       auth: t.scope ? { required: true, scope: t.scope } : { required: false },
     })),
     interfaces: [
-      { type: "mcp", url: `${origin}${agentConfig.mcp.path}`, transport: "streamable-http" },
+      { type: "mcp", url: `${origin}${agentConfig.mcp.path}`, transport: "streamable-http", card: `${origin}/.well-known/mcp/server-card.json` },
       { type: "a2a", url: `${origin}${agentConfig.a2a.path}`, card: `${origin}/.well-known/agent-card.json` },
       { type: "rest", url: `${origin}${agentConfig.api.basePath}`, openapi: `${origin}/openapi.json` },
     ],
+    mcp_server_card: `${origin}/.well-known/mcp/server-card.json`,
     anonymous_capabilities: TOKEN_FREE_TOOLS.map((t) => t.name),
     auth: {
       type: "oauth2-device-code",

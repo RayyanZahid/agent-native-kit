@@ -22,13 +22,15 @@ export function GET(req: Request) {
     },
     url: `${origin}${agentConfig.mcp.path}`,
     transport: "streamable-http",
+    server_card: `${origin}/.well-known/mcp/server-card.json`,
     servers: [{
       name: agentConfig.product.slug,
       url: `${origin}${agentConfig.mcp.path}`,
       transport: "streamable-http",
       protocol_version: agentConfig.mcp.protocolVersion,
       authentication: { type: "oauth2", flow: "device_code", metadata: `${origin}/.well-known/oauth-protected-resource` },
-      tools: TOOLS.map((t) => ({ name: t.name, description: t.description, requires_auth: t.scope !== null })),
+      tools: TOOLS.map((t) => ({ name: t.name, description: t.description, title: t.title, annotations: t.annotations, requires_auth: t.scope !== null })),
+      server_card: `${origin}/.well-known/mcp/server-card.json`,
       anonymous_tools: TOKEN_FREE_TOOLS.map((t) => t.name),
     }],
   });

@@ -31,8 +31,8 @@ import { TOKEN_FREE_TOOLS } from "@/lib/mcp/tools";
  * cannot drift from the server either. Only token-free tools are exposed: a
  * page cannot hold a bearer token.
  */
-const WEB_TOOLS = TOKEN_FREE_TOOLS.map(({ name, description, inputSchema }) => ({
-  name, description, inputSchema,
+const WEB_TOOLS = TOKEN_FREE_TOOLS.map(({ name, title, description, annotations, inputSchema }) => ({
+  name, title, description, annotations, inputSchema,
 }));
 
 const SCRIPT = `
@@ -60,7 +60,7 @@ const SCRIPT = `
     };
   }
   var tools = defs.map(function (d) {
-    return { name: d.name, description: d.description, inputSchema: d.inputSchema, execute: call(d.name) };
+    return { name: d.name, title: d.title, description: d.description, inputSchema: d.inputSchema, annotations: d.annotations, execute: call(d.name) };
   });
 
   function attempt() {

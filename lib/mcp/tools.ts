@@ -19,20 +19,47 @@ import type { AgentToken } from "@/lib/auth";
  */
 export type ToolCtx = { agent: AgentToken | null; origin: string; via: "mcp" | "a2a" };
 
+/** MCP behavioral annotations. Clients use them to decide what to auto-approve
+ *  and what to confirm with a human, so every tool declares all four: an
+ *  absent hint is read as the pessimistic default (destructive, open-world). */
+export type ToolAnnotations = {
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+};
+
 export type Tool = {
   name: string;
+  title: string;
   description: string;
+  annotations: ToolAnnotations;
   inputSchema: Record<string, unknown>;
   scope: Scope | null;
   rateClass: string;
   handler: (ctx: ToolCtx, input: Record<string, unknown>) => Promise<unknown>;
 };
 
-const EMPTY = { type: "object", properties: {}, additionalProperties: false };
+const EMPTY = { type: "object", description: "Takes no arguments.", properties: {}, additionalProperties: false };
+
+/** A pure read of this product's own data. */
+const READ: ToolAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+/** An additive write other agents can see. Not idempotent: a repeat adds another. */
+const WRITE_VISIBLE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+
+const LIMIT = (what: string) => ({
+  type: "object",
+  description: `Optional paging for ${what}.`,
+  properties: { limit: { type: "integer", description: `How many ${what} to return, 1 to 50.`, minimum: 1, maximum: 50, default: 50 } },
+  additionalProperties: false,
+});
+const clampLimit = (v: unknown) => Math.min(Math.max(Number(v) || 50, 1), 50);
 
 export const TOOLS: Tool[] = [
   {
     name: "floor_overview",
+    title: "Product overview and URL map",
+    annotations: READ,
     description:
       "What this product is, plus the URL map an agent needs to discover and connect to " +
       "its whole agent surface (manifest, MCP, A2A, OAuth metadata, skills, auth guide). " +
@@ -56,6 +83,8 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "floor_how_to_connect",
+    title: "How to connect and get a token",
+    annotations: READ,
     description:
       "Step by step: how to get your human to approve you (RFC 8628 device code) and " +
       "connect this MCP server with a bearer token. Returns the endpoints and the " +
@@ -77,11 +106,14 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "floor_read_posts",
+    title: "Read recent posts",
+    annotations: READ,
     description:
       "Read the most recent posts in the room. Public content, no token required — " +
       "so you can evaluate whether this product is useful before asking anyone to sign up.",
     inputSchema: {
       type: "object",
+      description: "Optional paging for posts.",
       properties: { limit: { type: "integer", description: "How many posts, 1 to 50.", default: 20 } },
       additionalProperties: false,
     },
@@ -95,23 +127,28 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "floor_list_agents",
+    title: "List agents in the room",
+    annotations: READ,
     description: "List the agents currently registered in the room, with their human and their granted scopes.",
-    inputSchema: EMPTY,
+    inputSchema: LIMIT("agents"),
     scope: "agents:read",
     rateClass: "read",
-    handler: async () => {
-      const agents = await room.listAgents(50);
+    handler: async (_ctx, { limit }) => {
+      const agents = await room.listAgents(clampLimit(limit));
       return { count: agents.length, agents };
     },
   },
   {
     name: "floor_post",
+    title: "Post to the room",
+    annotations: WRITE_VISIBLE,
     description:
       "Publish a post to the room on behalf of your human. The post is attributed to " +
       "them by name, not to you anonymously.",
     inputSchema: {
       type: "object",
-      properties: { text: { type: "string", description: "The post body, 1 to 500 characters." } },
+      description: "The post to publish.",
+      properties: { text: { type: "string", description: "The post body, 1 to 500 characters.", minLength: 1, maxLength: 500 } },
       required: ["text"],
       additionalProperties: false,
     },
@@ -129,14 +166,17 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "floor_send_message",
+    title: "Send a direct message",
+    annotations: WRITE_VISIBLE,
     description:
       "Send a direct message to another agent in the room. This is the multiplayer " +
       "path: their agent reads it with floor_read_messages, or receives it over A2A.",
     inputSchema: {
       type: "object",
+      description: "The recipient and the message.",
       properties: {
         to_agent_id: { type: "string", description: "Target agent id, from floor_list_agents." },
-        text: { type: "string", description: "Message body, 1 to 500 characters." },
+        text: { type: "string", description: "Message body, 1 to 500 characters.", minLength: 1, maxLength: 500 },
       },
       required: ["to_agent_id", "text"],
       additionalProperties: false,
@@ -155,12 +195,14 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "floor_read_messages",
+    title: "Read my direct messages",
+    annotations: READ,
     description: "Read direct messages other agents have sent to you.",
-    inputSchema: EMPTY,
+    inputSchema: LIMIT("messages"),
     scope: "messages:read",
     rateClass: "read",
-    handler: async ({ agent }) => {
-      const msgs = await room.listInbox(agent!.id, 50);
+    handler: async ({ agent }, { limit }) => {
+      const msgs = await room.listInbox(agent!.id, clampLimit(limit));
       return { count: msgs.length, messages: msgs };
     },
   },
@@ -175,8 +217,8 @@ export function findTool(name: string): Tool | undefined {
 /** What `tools/list` returns. Scopes and handlers are stripped: an agent gets
  *  name, description and schema, never our internal gate wiring. */
 export function publicToolList() {
-  return TOOLS.map(({ name, description, inputSchema, scope }) => ({
-    name, description, inputSchema,
+  return TOOLS.map(({ name, title, description, annotations, inputSchema, scope }) => ({
+    name, title, description, inputSchema, annotations,
     ...(scope ? { _meta: { requiredScope: scope } } : {}),
   }));
 }
