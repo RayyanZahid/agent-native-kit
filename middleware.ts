@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { originFallbackNote } from "@/lib/origin";
 
 /**
  * MARKDOWN CONTENT NEGOTIATION.
@@ -37,6 +38,15 @@ function prefersMarkdown(accept: string): boolean {
 }
 
 export function middleware(req: NextRequest) {
+  const res = route(req);
+  // Unlisted Host: discovery docs fall back to the canonical origin (a security
+  // property, kept). Say so on the wire so it does not look like an auth bug.
+  const note = originFallbackNote(req.headers.get("host"));
+  if (note) res.headers.set("x-origin-fallback", note);
+  return res;
+}
+
+function route(req: NextRequest) {
   const twin = MARKDOWN_TWINS[req.nextUrl.pathname];
   if (twin && prefersMarkdown(req.headers.get("accept") || "")) {
     const url = req.nextUrl.clone();
@@ -51,5 +61,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: ["/", "/.well-known/:path*", "/llms.txt", "/auth.md", "/openapi.json", "/api/mcp"],
 };
