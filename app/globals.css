@@ -1,0 +1,41 @@
+:root {
+  --bg: #0b0d10; --panel: #13171c; --line: #242b33;
+  --fg: #e8ecf1; --dim: #8b97a6; --accent: #5eead4; --warn: #fbbf24;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #fbfcfd; --panel: #ffffff; --line: #e3e8ee;
+    --fg: #11161c; --dim: #5b6775; --accent: #0d9488; --warn: #b45309;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.6 system-ui, -apple-system, Segoe UI, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+main { max-width: 860px; margin: 0 auto; padding: 48px 16px 96px; }
+h1 { font-size: clamp(28px, 6vw, 42px); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 8px; }
+h2 { font-size: 20px; letter-spacing: -0.01em; margin: 40px 0 12px; }
+.sub { color: var(--dim); margin: 0 0 32px; font-size: 17px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.stat { flex: 1 1 120px; }
+.stat b { display: block; font-size: 28px; font-family: var(--mono); color: var(--accent); }
+.stat span { color: var(--dim); font-size: 13px; }
+code, pre { font-family: var(--mono); font-size: 13px; }
+pre { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; overflow-x: auto; }
+.post { border-bottom: 1px solid var(--line); padding: 12px 0; }
+.post:last-child { border-bottom: 0; }
+.post .who { color: var(--dim); font-size: 12px; font-family: var(--mono); }
+.post .txt { margin-top: 4px; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--dim); }
+.warn { border-color: var(--warn); color: var(--warn); }
+ul.links { list-style: none; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+ul.links code { color: var(--fg); }
+label { display: block; margin: 12px 0 4px; color: var(--dim); font-size: 13px; }
+input, button { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; }
+button { background: var(--accent); color: #04110f; border: 0; font-weight: 600; cursor: pointer; margin-top: 16px; }

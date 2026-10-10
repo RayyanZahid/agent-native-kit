@@ -1,0 +1,23 @@
+{
+  "name": "agent-native-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A Next.js base that is agent-native at the floor. Clone, set one config, deploy, build your product on top.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "score": "python scripts/score.py",
+    "verify": "bash scripts/verify.sh"
+  },
+  "dependencies": {
+    "next": "16.4.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.7",
+    "@types/react": "19.2.2",
+    "typescript": "5.7.3"
+  }
+}
