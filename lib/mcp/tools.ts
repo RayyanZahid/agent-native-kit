@@ -95,7 +95,7 @@ export const TOOLS: Tool[] = [
     rateClass: "public",
     handler: async ({ origin }) => ({
       steps: [
-        `POST ${origin}/api/agent/signup/start with {"scopes":["posts:write"],"agent_name":"your name"}`,
+        `POST ${origin}/api/agent/signup/start with ${JSON.stringify({ scopes: EXAMPLE_SCOPES, agent_name: "your name" })}`,
         "Show your human verification_uri_complete. They approve while signed in; they see the exact scope list.",
         `Poll GET ${origin}/api/agent/signup/poll?device_code=<device_code> every 3s until status=completed.`,
         `Add ${origin}/api/mcp to your MCP client with header: Authorization: Bearer agt_...`,
@@ -222,6 +222,27 @@ export function mcpInstructions(origin: string): string {
 }
 
 export const TOKEN_FREE_TOOLS = TOOLS.filter((t) => t.scope === null);
+export const GATED_TOOLS = TOOLS.filter((t) => t.scope !== null);
+
+/** Prose in llms.txt, auth.md and the signup remedies names tools and scopes
+ *  ONLY through these, so renaming or deleting a tool above can never leave a
+ *  served document pointing at something that no longer exists. */
+export const FIRST_FREE_TOOL = TOKEN_FREE_TOOLS[0]?.name ?? null;
+/** The scope an example token request asks for: the first gated tool's, else
+ *  the first declared scope, else none. */
+export const EXAMPLE_SCOPES: string[] = GATED_TOOLS[0]?.scope
+  ? [GATED_TOOLS[0].scope]
+  : Object.keys(agentConfig.scopes).slice(0, 1);
+
+/** A runnable tools/call example built from a tool's own inputSchema. */
+export function exampleToolCall(t: Tool | undefined): string | null {
+  if (!t) return null;
+  const props = ((t.inputSchema as any).properties ?? {}) as Record<string, { type?: string }>;
+  const required = ((t.inputSchema as any).required ?? []) as string[];
+  const args: Record<string, unknown> = {};
+  for (const k of required) args[k] = props[k]?.type === "integer" ? 1 : "...";
+  return JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: t.name, arguments: args } });
+}
 
 export function findTool(name: string): Tool | undefined {
   return TOOLS.find((t) => t.name === name);

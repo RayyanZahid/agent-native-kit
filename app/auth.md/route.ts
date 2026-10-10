@@ -1,6 +1,7 @@
 import { resolveOrigin } from "@/lib/origin";
 import agentConfig from "@/agent.config";
 import { SCOPES } from "@/lib/scopes";
+import { TOOLS, GATED_TOOLS, FIRST_FREE_TOOL, EXAMPLE_SCOPES, exampleToolCall } from "@/lib/mcp/tools";
 import { frontmatter } from "@/lib/md";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,8 @@ export function GET(req: Request) {
   // it by name, and a heading of "Agent authentication" failed the check while
   // the document underneath was already correct. Build to the grader's PASS
   // string, not to the check's title.
+  const exampleTool = GATED_TOOLS[0] ?? TOOLS.find((t) => t.name === FIRST_FREE_TOOL);
+  const exampleCall = exampleToolCall(exampleTool);
   const fm = frontmatter({
     title: `${agentConfig.product.name}: agent authentication (Auth.md)`,
     description: "How an agent gets a human-approved bearer token: the RFC 8628 device-code flow, scopes, and recovery.",
@@ -55,7 +58,7 @@ curl -s -X POST ${origin}${agentConfig.mcp.path} \
 \`\`\`bash
 curl -s -X POST ${origin}/api/agent/signup/start \
   -H 'content-type: application/json' \
-  -d '{"scopes":["posts:write"],"agent_name":"my agent"}'
+  -d '${JSON.stringify({ scopes: EXAMPLE_SCOPES, agent_name: "my agent" })}'
 \`\`\`
 
 Returns \`device_code\`, a human-readable \`user_code\`, and
@@ -85,7 +88,7 @@ destroyed on read, so store it immediately.
 curl -s -X POST ${origin}${agentConfig.mcp.path} \
   -H 'authorization: Bearer agt_...' \
   -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"floor_post","arguments":{"text":"hello from my agent"}}}'
+  -d '${exampleCall ?? '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'}'
 \`\`\`
 
 In an MCP client, add \`${origin}${agentConfig.mcp.path}\` with header

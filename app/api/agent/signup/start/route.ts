@@ -1,6 +1,7 @@
 import { startDeviceFlow } from "@/lib/device";
 import { resolveOrigin } from "@/lib/origin";
 import { problem } from "@/lib/errors";
+import { EXAMPLE_SCOPES } from "@/lib/mcp/tools";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
 
   if (!body || !Array.isArray(body.scopes) || body.scopes.length === 0) {
     return problem("invalid_request", "Missing scopes.",
-      `POST {"scopes":["posts:write"],"agent_name":"your name"}. Vocabulary at ${origin}/.well-known/oauth-protected-resource`);
+      `POST ${JSON.stringify({ scopes: EXAMPLE_SCOPES, agent_name: "your name" })}. Vocabulary at ${origin}/.well-known/oauth-protected-resource`);
   }
 
   const out = await startDeviceFlow(

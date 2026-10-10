@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     return rpcError(id, -32004, `Rate limit for "${tool.rateClass}" reached. Resets in ${rl.reset}s.`, rateHeaders(rl));
   }
 
-  // Keep the agent roster fresh so floor_list_agents shows whoever is active.
+  // Keep the agent roster fresh so a tool that lists agents shows whoever is active.
   room.registerAgent({
     id: gate.agent.id, agentName: gate.agent.agentName,
     humanLabel: gate.agent.humanLabel, scopes: gate.agent.scopes,
