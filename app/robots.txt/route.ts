@@ -22,12 +22,23 @@ export function GET(req: Request) {
   const body = `# Humans and agents are both welcome here.
 # Agent entry point: ${origin}/.well-known/ai-agent.json
 
-# Cloudflare Content Signals. These express INTENT about how our content may be
-# used, separately from whether a crawler may fetch it. Stating them is the
-# point: silence here is not consent, it is ambiguity, and ambiguity gets
-# resolved in whatever direction the crawler prefers.
-User-agent: *
-Content-Signal: search=yes, ai-input=yes, ai-train=no
+# Content Signals - declare AI content usage preferences
+# See https://contentsignals.org/ and
+# https://datatracker.ietf.org/doc/draft-romm-aipref-contentsignals/
+#
+# These express INTENT about how our content may be used, separately from
+# whether a crawler may fetch it. Stating them is the point: silence is not
+# consent, it is ambiguity, and ambiguity gets resolved in whatever direction
+# the crawler prefers. The VALUES below are a choice; change them on purpose.
+#
+# Emitted BOTH as a global directive and inside the User-Agent group, because
+# real passers in the wild do it both ways and a parser that only looks in one
+# place reports "no Content Signals found" while the line is plainly on the
+# wire. Three guesses at the format cost more than emitting both forms.
+Content-Signal: ai-train=no, search=yes, ai-input=yes
+
+User-Agent: *
+Content-Signal: ai-train=no, search=yes, ai-input=yes
 Allow: /
 
 ${bots.map((b) => `User-agent: ${b}\nAllow: /`).join("\n\n")}

@@ -28,6 +28,8 @@ export function GET(req: Request) {
      * the normal cadence with a live grader, not a sign anything is wrong.
      */
     entries: TOOLS.map((t) => ({
+      identifier: t.name,
+      displayName: t.name,
       id: t.name,
       name: t.name,
       description: t.description,
