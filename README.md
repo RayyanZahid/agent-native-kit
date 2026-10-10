@@ -136,8 +136,8 @@ See [MODULES.md](MODULES.md) for what each one is worth and what breaks if you d
 
 ```bash
 npm run build      # typechecks every route
-bash scripts/verify.sh https://your-domain   # 14 live assertions
-python scripts/score.py your-domain.com      # both graders
+npm run verify https://your-domain   # 18 live checks; http://localhost:3000 works too
+# scores: paste your URL into isitagentready.com and ora.ai
 ```
 
 ### Two graders, and they do not measure the same thing
