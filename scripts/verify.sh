@@ -90,6 +90,9 @@ if curl -sf "$B/llms.txt" | grep -q 'SKILL.md'; then ok "llms.txt points agents 
 if json_get "/.well-known/ai-agent.json" | grep -q 'SKILL.md'; then ok "ai-agent.json points agents at SKILL.md"; else bad "ai-agent.json does not mention SKILL.md"; fi
 
 echo
+echo "Layer 3 - Identity"
+echo "  note  no separate checks: sign-in is covered by the 401 + WWW-Authenticate checks under Layer 4, and the signup flow is checked when you wire a real login (workshop Step 4)"
+
 echo "Layer 4 - Execution"
 N=$(curl -sf "$B/" | grep -c registerTool || true)
 if [ "${N:-0}" -gt 0 ]; then ok "WebMCP registerTool present in SERVED bytes ($N)"; else bad "WebMCP NOT in served bytes - the useEffect trap"; fi

@@ -146,8 +146,9 @@ See [MODULES.md](MODULES.md) for what each one is worth and what breaks if you d
 
 ```bash
 npm run build      # typechecks every route
-npm run verify https://your-domain   # 18 live checks; http://localhost:3000 works too
+npm run verify https://your-domain   # runs the live checks and prints its own count; http://localhost:3000 works too
 # scores: paste your URL into isitagentready.com and ora.ai
+# verify has no separate Layer 3 checks: identity is covered by the 401 checks under Layer 4 and by the signup flow when you wire a real login (Step 4)
 ```
 
 ### Two graders, and they do not measure the same thing
