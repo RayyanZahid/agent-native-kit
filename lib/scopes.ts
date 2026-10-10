@@ -51,7 +51,10 @@ export function scopesAllowedForTier(
   return { ok: ungranted.length === 0, granted, ungranted };
 }
 
-export function hasScope(held: readonly string[], required: Scope): boolean {
+/** `required` is a plain string on purpose: example routes check scopes by
+ *  name, and a literal that no longer exists in agent.config.ts must not stop
+ *  the build. A removed scope simply is never held, so the call is refused. */
+export function hasScope(held: readonly string[], required: string): boolean {
   return held.includes(required);
 }
 
@@ -65,7 +68,11 @@ export function hasScope(held: readonly string[], required: Scope): boolean {
     if (grant === "*") continue;
     for (const s of grant as readonly string[]) {
       if (!SCOPE_SET.has(s)) {
-        throw new Error(`agent.config.ts: tier "${tier}" grants unknown scope "${s}"`);
+        throw new Error(
+          `agent.config.ts, field tiers.${tier}: lists the scope "${s}", which is not in \`scopes\` ` +
+          `(you removed or renamed it). Delete "${s}" from tiers.${tier}, or set tiers.${tier} to "*" ` +
+          `to grant every scope in \`scopes\`.`,
+        );
       }
     }
   }

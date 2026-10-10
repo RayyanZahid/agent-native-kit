@@ -103,12 +103,11 @@ export const agentConfig = {
    */
   tiers: {
     anonymous: [],
-    member: [
-      "agents:read",
-      "posts:write",
-      "messages:read",
-      "messages:write",
-    ],
+    // "*" = every scope in `scopes` above, so adding or REMOVING a scope there
+    // needs no second edit here. Switch to an explicit list (["a:read", ...])
+    // only when members should get LESS than operators; then every name in the
+    // list must exist in `scopes` or the build stops and names this field.
+    member: "*",
     operator: "*",
   },
 
