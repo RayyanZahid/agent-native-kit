@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "verify": "bash scripts/verify.sh"
+    "verify": "bash scripts/verify.sh",
+    "stop": "node scripts/serve.mjs stop",
+    "restart": "node scripts/serve.mjs restart"
   },
   "dependencies": {
     "next": "16.4.0",

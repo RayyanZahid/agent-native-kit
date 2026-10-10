@@ -41,6 +41,16 @@ npm run dev
 
 Then open `http://localhost:3000`. Everything already works.
 
+Running the production build (what `verify` should check), with no Ctrl+C needed:
+
+```bash
+npm run restart      # stop whatever holds the port, build, start in the background, wait until it answers
+npm run stop         # stop it
+PORT=3106 npm run restart   # any port; default 3000
+```
+
+Both find the server by the port it listens on, so the old build can never keep serving silently, and they touch no other process.
+
 ### Make it yours, in three edits
 
 1. **`agent.config.ts`** — product name, canonical host, scope vocabulary, tiers.
