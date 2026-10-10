@@ -30,7 +30,10 @@ export async function POST(req: Request) {
     );
   }
 
+  // Short id so a reporter can quote it back ("report fb_x7k2m9 never got a reply").
+  const id = `fb_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
   await kvPush("agent:feedback", {
+    id,
     problem: String(body.problem).slice(0, 1000),
     url: typeof body.url === "string" ? body.url.slice(0, 500) : null,
     agent: typeof body.agent === "string" ? body.agent.slice(0, 120) : null,
@@ -39,7 +42,7 @@ export async function POST(req: Request) {
   }, 100);
 
   return Response.json(
-    { ok: true, note: "Logged. Thank you — this is how we find out our discovery surface drifted." },
+    { ok: true, id, note: `Logged as ${id}. Quote that id if you follow up. Thank you: this is how we find out our discovery surface drifted.` },
     { headers: { "access-control-allow-origin": "*" } },
   );
 }
