@@ -147,9 +147,14 @@ See [MODULES.md](MODULES.md) for what each one is worth and what breaks if you d
 ```bash
 npm run build      # typechecks every route
 npm run verify https://your-domain   # runs the live checks and prints its own count; http://localhost:3000 works too
+npm run verify https://your-domain -- --json   # the same findings as JSON, for an agent to read
 # scores: paste your URL into isitagentready.com and ora.ai
 # verify has no separate Layer 3 checks: identity is covered by the 401 checks under Layer 4 and by the signup flow when you wire a real login (Step 4)
 ```
+
+The checks live in `scripts/verify.py` (Python standard library only) and work against any site, not just this kit: every address is discovered from the site's own documents (MCP endpoint from `mcp.json`, tools from `tools/list`, REST routes and the health route from `openapi.json`). Each FAIL and WARN prints why it matters and the fix, and the run ends with the failures to fix first. Run from this folder against a kit-built site and fixes also name the file to edit. The only tool it calls is one the site marks `readOnlyHint` with no required input, so it cannot write to the site.
+
+To add checks for your own product, create `scripts/verify_site.py` with `def checks(v):` and call `v.check(id, "pass"|"warn"|"fail"|"skip", label, why, fix)`. Keep `verify.py` itself unchanged so it can be updated from this repo.
 
 ### Two graders, and they do not measure the same thing
 
