@@ -27,7 +27,7 @@ export function GET(req: Request) {
 # point: silence here is not consent, it is ambiguity, and ambiguity gets
 # resolved in whatever direction the crawler prefers.
 User-agent: *
-Content-Signal: search=yes, ai-input=yes, ai-train=no
+Content-Signal: search=yes,ai-input=yes,ai-train=no
 Allow: /
 
 ${bots.map((b) => `User-agent: ${b}\nAllow: /`).join("\n\n")}
@@ -42,6 +42,6 @@ Sitemap: ${origin}/sitemap.xml
 Agentmap: ${origin}/.well-known/ai-catalog.json
 `;
   return new Response(body, {
-    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" },
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=300" },
   });
 }

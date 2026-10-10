@@ -10,7 +10,11 @@ export const dynamic = "force-dynamic";
 export function GET(req: Request) {
   const origin = resolveOrigin(req);
   return discoveryJson({
-    version: "1.0",
+    // `specVersion` identifies the ARD SPEC; `version` identifies OUR catalog.
+    // The scanner asked for specVersion by name and a document carrying only
+    // `version` read as malformed rather than as an old version.
+    specVersion: "1.0",
+    version: agentConfig.product.version,
     name: agentConfig.product.name,
     description: agentConfig.product.description,
     homepage: origin,

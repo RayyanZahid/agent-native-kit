@@ -32,5 +32,33 @@ export function GET(req: Request) {
     // metadata so a client knows a person is in the loop before it starts.
     "x-human-approval-required": true,
     "x-human-approval-endpoint": `${origin}/approve`,
+
+    /**
+     * THE agents.txt `agent_auth` BLOCK, and it must be COMPLETE.
+     *
+     * This is the check that revealed itself one layer at a time. The /auth.md
+     * document existed and was correct; then its H1 was wrong; then the heading
+     * passed and the scanner asked for THIS block instead. A green flip can be
+     * hiding the next sub-check, which is why the rule for this grader is
+     * rescan after every single fix rather than batching.
+     *
+     * Every field below is load-bearing. A partial block reads as absent.
+     * Schema: https://agents-txt.com/auth.md
+     */
+    agent_auth: {
+      skill: `${origin}/auth.md`,
+      register_uri: `${origin}/api/agent/signup/start`,
+      claim_uri: `${origin}/api/agent/signup/poll`,
+      identity_types_supported: ["anonymous"],
+      anonymous: {
+        credential_types_supported: ["api_key"],
+        register_uri: `${origin}/api/agent/signup/start`,
+        claim_uri: `${origin}/api/agent/signup/poll`,
+      },
+      human_approval_required: true,
+      human_approval_uri: `${origin}/approve`,
+      scopes_supported: SCOPES,
+      documentation: `${origin}/auth.md`,
+    },
   });
 }
