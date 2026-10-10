@@ -1,6 +1,6 @@
 import { resolveOrigin } from "@/lib/origin";
 import agentConfig from "@/agent.config";
-import { SCOPES } from "@/lib/scopes";
+import { SCOPES, SCOPE_DESCRIPTIONS } from "@/lib/scopes";
 import { TOOLS, GATED_TOOLS, FIRST_FREE_TOOL, EXAMPLE_SCOPES, exampleToolCall } from "@/lib/mcp/tools";
 import { frontmatter } from "@/lib/md";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  *  document is a recovery path, not decoration. Keep it runnable. */
 export function GET(req: Request) {
   const origin = resolveOrigin(req);
-  const scopeRows = Object.entries(agentConfig.scopes)
+  const scopeRows = Object.entries(SCOPE_DESCRIPTIONS)
     .map(([s, d]) => `| \`${s}\` | ${d} |`).join("\n");
 
   // The H1 must literally contain "Auth.md": the Cloudflare scanner looks for

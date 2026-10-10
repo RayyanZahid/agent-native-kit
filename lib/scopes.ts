@@ -16,6 +16,10 @@ import agentConfig from "@/agent.config";
  * Every discovery document updates itself from step 1.
  */
 export const SCOPES = Object.keys(agentConfig.scopes) as Scope[];
+/** scope -> plain-language description, typed loosely so an empty `scopes`
+ *  (a read-only product) still renders. Use this for display; use `Scope` for
+ *  anything that must be a real scope. */
+export const SCOPE_DESCRIPTIONS: Record<string, string> = agentConfig.scopes;
 export type Scope = keyof typeof agentConfig.scopes;
 export type Tier = keyof typeof agentConfig.tiers;
 

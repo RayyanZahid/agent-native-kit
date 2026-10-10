@@ -1,5 +1,5 @@
 import agentConfig from "@/agent.config";
-import { type Scope } from "@/lib/scopes";
+import { type Scope, SCOPE_DESCRIPTIONS } from "@/lib/scopes";
 import * as room from "@/lib/room";
 import type { AgentToken } from "@/lib/auth";
 
@@ -101,7 +101,7 @@ export const TOOLS: Tool[] = [
         `Add ${origin}/api/mcp to your MCP client with header: Authorization: Bearer agt_...`,
       ],
       guide: `${origin}/auth.md`,
-      scopes: agentConfig.scopes,
+      scopes: SCOPE_DESCRIPTIONS,
       note: "You cannot mint your own token. A signed-in human approves every one.",
     }),
   },

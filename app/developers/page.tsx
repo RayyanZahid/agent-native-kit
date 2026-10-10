@@ -1,6 +1,6 @@
 import agentConfig from "@/agent.config";
 import { TOOLS, TOKEN_FREE_TOOLS } from "@/lib/mcp/tools";
-import { SCOPES } from "@/lib/scopes";
+import { SCOPES, SCOPE_DESCRIPTIONS } from "@/lib/scopes";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +65,7 @@ export default function Developers() {
 
       <h2>Scopes</h2>
       <div className="panel">
-        {Object.entries(agentConfig.scopes).map(([scope, desc]) => (
+        {Object.entries(SCOPE_DESCRIPTIONS).map(([scope, desc]) => (
           <div className="post" key={scope}>
             <div className="who"><code>{scope}</code></div>
             <div className="txt">{desc}</div>

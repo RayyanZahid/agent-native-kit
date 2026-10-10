@@ -1,4 +1,5 @@
 import agentConfig from "@/agent.config";
+import { SCOPE_DESCRIPTIONS } from "@/lib/scopes";
 import { ApproveForm } from "./ApproveForm";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ export default async function ApprovePage({
 
       <h2>The scope vocabulary</h2>
       <div className="panel">
-        {Object.entries(agentConfig.scopes).map(([scope, desc]) => (
+        {Object.entries(SCOPE_DESCRIPTIONS).map(([scope, desc]) => (
           <div className="post" key={scope}>
             <div className="who"><code>{scope}</code></div>
             <div className="txt">{desc}</div>
