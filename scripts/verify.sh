@@ -118,7 +118,7 @@ if [ -n "$GATED_TOOL" ]; then
   WWW=$(curl -s -D- -o /dev/null -X POST "$B/api/mcp" -H 'content-type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"$GATED_TOOL\",\"arguments\":{}}}" | grep -ci 'www-authenticate' || true)
   if [ "${WWW:-0}" -gt 0 ]; then ok "401 on $GATED_TOOL carries WWW-Authenticate pointing at PRM"; else bad "401 has no WWW-Authenticate - strict clients cannot discover auth"; fi
 else
-  bad "no gated tool in tools/list to check the 401 against"
+  warn "you have no actions that need a login; that's fine if your site is read-only. (Add a tool with a scope in lib/mcp/tools.ts if people should be able to change something, and this check will cover its 401.)"
 fi
 
 # Annotations + schemas: what a client reads to decide what it may auto-approve.
@@ -152,7 +152,7 @@ SCOPES=$(json_get "/.well-known/oauth-protected-resource" | py_json "print(' '.j
 USED=$(echo "$TL" | py_json "print(' '.join(x.get('_meta',{}).get('requiredScope','') for x in d['result']['tools']))")
 UNUSED=""
 for S in $SCOPES; do case " $USED " in *" $S "*) ;; *) UNUSED="$UNUSED $S" ;; esac; done
-if [ -z "$UNUSED" ]; then ok "every advertised scope is required by at least one tool"; else warn "advertised scopes no tool requires:$UNUSED (remove them from scopes in agent.config.ts, or use them)"; fi
+if [ -z "$UNUSED" ]; then ok "every advertised scope is required by at least one tool"; else warn "advertised scopes no tool requires:$UNUSED. To remove one safely: delete its line from \`scopes\` in agent.config.ts (tiers.member is \"*\" so it needs no second edit; if you changed it to a list, delete the name there too), then run npm run restart. Or keep it and give a tool in lib/mcp/tools.ts that scope"; fi
 
 # A2A: a card that validates is not an endpoint that exists. Call what it advertises.
 AURL=$(json_get "/.well-known/agent-card.json" | py_json "print(d.get('url',''))")
