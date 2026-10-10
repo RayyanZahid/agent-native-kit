@@ -32,14 +32,22 @@ function listeners() {
       if (c.length >= 5 && c[3] === "LISTENING" && c[1].endsWith(`:${PORT}`)) pids.add(Number(c[4]));
     }
   } else {
-    let out = spawnSync("lsof", ["-ti", `tcp:${PORT}`, "-sTCP:LISTEN"], { encoding: "utf8" });
-    if (out.error || (!out.stdout && out.status !== 1)) {
-      out = spawnSync("fuser", [`${PORT}/tcp`], { encoding: "utf8" });
+    // Ask every tool we have and union the answers. As a normal user, lsof can
+    // exit 1 with no output while a process of ours holds the port (seen on
+    // Ubuntu 24.04), so one tool's silence is never proof the port is free.
+    const tries = [
+      ["lsof", ["-ti", `tcp:${PORT}`, "-sTCP:LISTEN"]],
+      ["fuser", [`${PORT}/tcp`]],
+    ];
+    for (const [cmd, args] of tries) {
+      const out = spawnSync(cmd, args, { encoding: "utf8" });
+      if (out.error) continue;
+      for (const t of ((out.stdout || "") + " " + (out.stderr || "")).match(/\d+/g) || []) {
+        if (Number(t) !== PORT) pids.add(Number(t)); // fuser echoes the port itself
+      }
     }
-    for (const t of ((out.stdout || "") + " " + (out.stderr || "")).match(/\d+/g) || []) {
-      // fuser prints "3000/tcp:" on stderr; skip the port number itself
-      if (Number(t) !== PORT) pids.add(Number(t));
-    }
+    const ss = spawnSync("ss", ["-ltnpH", `sport = :${PORT}`], { encoding: "utf8" });
+    for (const m of (ss.stdout || "").matchAll(/pid=(\d+)/g)) pids.add(Number(m[1]));
   }
   pids.delete(0);
   return [...pids];
@@ -54,7 +62,7 @@ const answers = () =>
 
 async function stop() {
   const pids = listeners();
-  if (!pids.length) { console.log(`Nothing is listening on port ${PORT}. Nothing to stop.`); return; }
+  if (!pids.length) { console.log(`I can see no process of yours on port ${PORT}, so there is nothing for me to stop.`); return; }
   for (const pid of pids) {
     console.log(`Stopping process ${pid} (the one listening on port ${PORT}).`);
     if (win) spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], { stdio: "ignore" });
@@ -73,6 +81,10 @@ async function stop() {
 
 async function restart() {
   await stop();
+  if (await answers()) {
+    console.error(`Something is still answering on port ${PORT}, but I could not find or stop it. Nothing was started. Stop it by hand, or use another PORT.`);
+    process.exit(1);
+  }
   console.log("Building...");
   const b = spawnSync("npm run build", { cwd: root, stdio: "inherit", shell: true });
   if (b.status !== 0) { console.error("Build failed, so the server was NOT started. Fix the error above, then run `npm run restart` again."); process.exit(1); }
@@ -82,9 +94,17 @@ async function restart() {
   const child = spawn(process.execPath, [join(root, "node_modules", "next", "dist", "bin", "next"), "start", "-p", String(PORT)], {
     cwd: root, detached: true, stdio: ["ignore", log, log], windowsHide: true,
   });
+  let exited = null;
+  child.on("exit", (code) => { exited = code; });
   child.unref();
   for (let i = 0; i < 100; i++) {
+    if (exited !== null) {
+      console.error(`The new server stopped straight away (exit ${exited}), so the NEW build is NOT serving. See ${logPath}.`);
+      process.exit(1);
+    }
     if (await answers()) {
+      await sleep(1500); // a server that lost the port race exits within a moment
+      if (exited !== null) continue;
       console.log(`Serving the NEW build at http://localhost:${PORT} (process ${listeners().join(", ") || child.pid}).`);
       console.log(`Stop it with: PORT=${PORT} npm run stop     Log: ${logPath}`);
       return;
