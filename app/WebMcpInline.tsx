@@ -39,7 +39,7 @@ const SCRIPT = `
 (function () {
   if (window.__floorWebMcpRegistered) return;
   var MCP = ${JSON.stringify(agentConfig.mcp.path)};
-  var defs = ${JSON.stringify(WEB_TOOLS).replace(/</g, "\u003c")};
+  var defs = ${JSON.stringify(WEB_TOOLS).replace(/</g, "\\u003c")};
   var rpcId = 0;
   function call(name) {
     return function (args) {
