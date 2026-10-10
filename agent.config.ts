@@ -61,6 +61,16 @@ export const agentConfig = {
   },
 
   /**
+   * KV KEY NAMESPACE. Every key this app writes is prefixed with it.
+   *
+   * Set this before you deploy onto any KV you share with another project. A
+   * shared Redis with unprefixed keys is a single `room:posts` collision away
+   * from two products silently overwriting each other, and the symptom is
+   * missing data rather than an error. Change it when you fork.
+   */
+  kvNamespace: "ank",
+
+  /**
    * SCOPE VOCABULARY. Format `<noun>:<verb>`. NOT hierarchical on purpose:
    * `posts:write` does not imply `posts:read`. A caller asks for both if it
    * needs both.
