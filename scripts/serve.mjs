@@ -116,6 +116,7 @@ async function restart() {
 }
 
 const cmd = process.argv[2];
+if (cmd === "stop" || cmd === "restart") console.log(`Using port ${PORT}. Set PORT=... to change it.`);
 if (cmd === "stop") await stop();
 else if (cmd === "restart") await restart();
 else { console.error("usage: node scripts/serve.mjs stop|restart  (PORT env, default 3000)"); process.exit(1); }
