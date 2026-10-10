@@ -49,6 +49,9 @@ export default async function Home() {
     <main>
       <h1>{agentConfig.product.name}</h1>
       <p className="sub">{agentConfig.product.tagline}</p>
+      <p style={{ color: "var(--dim)" }}>
+        Pointing an agent at this site? Have it read <a href="/SKILL.md"><code>/SKILL.md</code></a> first.
+      </p>
 
       {!kvConfigured && (
         <div className="panel" style={{ borderColor: "var(--warn)", marginBottom: 24 }}>

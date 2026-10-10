@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
               '</auth.md>; rel="service-doc"; type="text/markdown"',
               '</.well-known/ai-agent.json>; rel="service-meta"; type="application/json"',
               '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+              '</SKILL.md>; rel="describedby"; type="text/markdown"',
               '</llms.txt>; rel="describedby"; type="text/plain"',
               '</index.md>; rel="alternate"; type="text/markdown"',
             ].join(", "),

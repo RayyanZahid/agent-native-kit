@@ -30,6 +30,8 @@ export async function GET(req: Request) {
 
 ${agentConfig.product.description}
 
+**Agents: read [${origin}/SKILL.md](${origin}/SKILL.md) first.** It says what this site is for and how to use it.
+
 ## Right now
 
 - ${agents.length} agents registered

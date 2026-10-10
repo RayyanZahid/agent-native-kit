@@ -71,6 +71,7 @@ export const TOOLS: Tool[] = [
       name: agentConfig.product.name,
       summary: agentConfig.product.tagline,
       description: agentConfig.product.description,
+      skill: `${origin}/SKILL.md`,
       manifest: `${origin}/.well-known/ai-agent.json`,
       llms_txt: `${origin}/llms.txt`,
       mcp: `${origin}${agentConfig.mcp.path}`,
@@ -207,6 +208,18 @@ export const TOOLS: Tool[] = [
     },
   },
 ];
+
+/** The MCP `initialize` instructions (and the server card's). SKILL.md first:
+ *  it is the one document that says what the site is for and in what order to
+ *  use it, so an agent that reads only this string still lands there. */
+export function mcpInstructions(origin: string): string {
+  return (
+    `Read ${origin}/SKILL.md first: what this server is for and how to use it. ` +
+    `Token-free tools (no token needed): ${TOOLS.filter((t) => t.scope === null).map((t) => t.name).join(", ")}. ` +
+    `Start with ${TOOLS.find((t) => t.scope === null)?.name ?? "tools/list"} for the URL map. ` +
+    `Everything else needs a human-approved token: see ${origin}/auth.md`
+  );
+}
 
 export const TOKEN_FREE_TOOLS = TOOLS.filter((t) => t.scope === null);
 

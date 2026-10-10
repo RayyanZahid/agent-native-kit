@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="service-meta" href="/.well-known/ai-agent.json" type="application/json" />
         <link rel="api-catalog" href="/.well-known/api-catalog" type="application/linkset+json" />
         <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
+        <link rel="describedby" href="/SKILL.md" type="text/markdown" />
         <link rel="describedby" href="/llms.txt" type="text/plain" />
         <link rel="alternate" href="/index.md" type="text/markdown" />
       </head>

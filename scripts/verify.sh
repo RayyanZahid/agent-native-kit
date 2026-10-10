@@ -69,6 +69,11 @@ check_ctype "/llms.txt" "text/plain" "llms.txt served as text/plain"
 if [ "$(curl -sf "$B/llms.txt" | wc -c)" -lt 30000 ]; then ok "llms.txt under the 30,000 budget"; else bad "llms.txt over budget"; fi
 check_ctype "/auth.md" "text/markdown" "auth.md served as text/markdown"
 check_ctype "/pricing.md" "text/markdown" "pricing.md exists (required even when free)"
+check_ctype "/SKILL.md" "text/markdown" "SKILL.md served as text/markdown (the agent entry point)"
+# Every door should lead to SKILL.md first: homepage HTML, llms.txt, manifest.
+if curl -sf "$B/" | grep -q 'SKILL.md'; then ok "homepage HTML points agents at SKILL.md"; else bad "homepage HTML does not mention SKILL.md"; fi
+if curl -sf "$B/llms.txt" | grep -q 'SKILL.md'; then ok "llms.txt points agents at SKILL.md"; else bad "llms.txt does not mention SKILL.md"; fi
+if json_get "/.well-known/ai-agent.json" | grep -q 'SKILL.md'; then ok "ai-agent.json points agents at SKILL.md"; else bad "ai-agent.json does not mention SKILL.md"; fi
 
 echo
 echo "Layer 4 - Execution"
@@ -116,6 +121,7 @@ if [ -n "$MPATH" ]; then
   INIT=$(curl -s -X POST "$B$MPATH" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":9,"method":"initialize","params":{}}' 2>/dev/null)
   if [ -n "$(echo "$INIT" | py_json "print(d['result']['serverInfo']['name'])")" ]; then
     ok "MCP discovery: mcp.json -> $MPATH answers initialize"
+    if echo "$INIT" | grep -q 'SKILL.md'; then ok "MCP initialize instructions point at SKILL.md"; else bad "MCP initialize instructions do not mention SKILL.md"; fi
   else
     bad "MCP discovery: mcp.json points at $MPATH but initialize does not answer there"
   fi

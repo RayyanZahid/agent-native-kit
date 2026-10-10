@@ -15,6 +15,8 @@ export function GET(req: Request) {
     description: agentConfig.product.description,
     version: agentConfig.product.version,
     homepage: origin,
+    // Read this first: what the site is for and the order to use it in.
+    skill: `${origin}/SKILL.md`,
     contact: agentConfig.product.contact,
     license: agentConfig.product.license,
     interfaces: {
@@ -39,6 +41,7 @@ export function GET(req: Request) {
     },
     pricing: { model: agentConfig.pricing.model, summary: agentConfig.pricing.summary, document: `${origin}/pricing.md` },
     discovery: {
+      skill: `${origin}/SKILL.md`,
       llms_txt: `${origin}/llms.txt`,
       skills_index: `${origin}/.well-known/agent-skills/index.json`,
       api_catalog: `${origin}/.well-known/api-catalog`,

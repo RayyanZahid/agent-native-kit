@@ -1,6 +1,6 @@
 import agentConfig from "@/agent.config";
 import { resolveOrigin, discoveryJson } from "@/lib/origin";
-import { publicToolList, TOKEN_FREE_TOOLS } from "@/lib/mcp/tools";
+import { mcpInstructions, publicToolList, TOKEN_FREE_TOOLS } from "@/lib/mcp/tools";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,7 @@ export function GET(req: Request) {
     homepage: origin,
     provider: { name: agentConfig.product.author, url: origin },
     transport: { type: "streamable-http", endpoint: `${origin}${agentConfig.mcp.path}` },
+    instructions: mcpInstructions(origin),
     capabilities: { tools: { listChanged: false } },
     authentication: {
       required: false,
