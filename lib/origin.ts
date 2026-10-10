@@ -43,7 +43,7 @@ function warnFallback(host: string) {
 }
 
 /** Header value for a request whose Host fell back, or null when it did not.
- *  Used by middleware so the fallback is visible on the wire, not only in logs. */
+ *  Used by proxy.ts so the fallback is visible on the wire, not only in logs. */
 export function originFallbackNote(host: string | null): string | null {
   const h = (host || "").toLowerCase().trim();
   if (!h || (agentConfig.hosts.allowed as readonly string[]).includes(h)) return null;

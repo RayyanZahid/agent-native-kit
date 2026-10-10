@@ -37,7 +37,9 @@ function prefersMarkdown(accept: string): boolean {
   return md.q >= competing;
 }
 
-export function middleware(req: NextRequest) {
+// Next 16 renamed the "middleware" file convention to "proxy": same matcher and
+// NextResponse API, Node runtime. Nothing here needs the edge runtime.
+export function proxy(req: NextRequest) {
   const res = route(req);
   // Unlisted Host: discovery docs fall back to the canonical origin (a security
   // property, kept). Say so on the wire so it does not look like an auth bug.

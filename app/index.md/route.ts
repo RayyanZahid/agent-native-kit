@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * The homepage, as markdown. Reached by content negotiation from `/` (see
- * middleware.ts) and directly at /index.md.
+ * proxy.ts) and directly at /index.md.
  *
  * Same substance as the HTML page, none of the chrome. This is what an agent
  * asking for `text/markdown` should get: the posts, the numbers, the URLs.
