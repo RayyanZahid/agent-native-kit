@@ -15,6 +15,12 @@ export function GET(req: Request) {
     version: agentConfig.product.version,
     url: `${origin}${agentConfig.a2a.path}`,
     preferredTransport: "JSONRPC",
+    // REQUIRED AT THE CARD LEVEL, not only per skill. Having it on every skill
+    // and not here failed validation with "missing or empty required field
+    // supportedInterfaces" — a message that reads like the skills are wrong.
+    supportedInterfaces: [
+      { transport: "JSONRPC", url: `${origin}${agentConfig.a2a.path}` },
+    ],
     provider: { organization: agentConfig.product.author, url: origin },
     documentationUrl: `${origin}/auth.md`,
     capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },

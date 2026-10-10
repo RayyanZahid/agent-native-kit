@@ -10,6 +10,18 @@ export function GET(req: Request) {
     name: agentConfig.product.name,
     description: agentConfig.product.tagline,
     version: agentConfig.product.version,
+    protocolVersion: agentConfig.mcp.protocolVersion,
+    // `serverInfo` mirrors what the MCP `initialize` response returns. A
+    // validator that had `name` at the top level still failed this card for
+    // wanting serverInfo.name, so ship both rather than reasoning about which
+    // one a given client reads.
+    serverInfo: {
+      name: agentConfig.product.name,
+      version: agentConfig.product.version,
+      description: agentConfig.product.tagline,
+    },
+    url: `${origin}${agentConfig.mcp.path}`,
+    transport: "streamable-http",
     servers: [{
       name: agentConfig.product.slug,
       url: `${origin}${agentConfig.mcp.path}`,
