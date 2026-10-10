@@ -5,6 +5,7 @@
 # Every check here is something a grader or a real agent actually reads. None of
 # them trust a config file; they all read the wire.
 set -u
+PY=$(command -v python3 || command -v python) || { echo "verify.sh needs python3"; exit 2; }
 B="${1:-http://localhost:3000}"
 PASS=0; FAIL=0
 
@@ -13,7 +14,7 @@ bad()  { printf '  FAIL  %s\n' "$1"; FAIL=$((FAIL+1)); }
 
 check_json() { # url, jq-ish python expr, label
   local body; body=$(curl -sf "$B$1" 2>/dev/null) || { bad "$3 (fetch failed)"; return; }
-  if echo "$body" | python -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if ($2) else 1)" 2>/dev/null; then
+  if echo "$body" | "$PY" -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if ($2) else 1)" 2>/dev/null; then
     ok "$3"
   else
     bad "$3"
@@ -49,8 +50,8 @@ N=$(curl -sf "$B/" | grep -c registerTool || true)
 if [ "${N:-0}" -gt 0 ]; then ok "WebMCP registerTool present in SERVED bytes ($N)"; else bad "WebMCP NOT in served bytes - the useEffect trap"; fi
 
 TL=$(curl -sf -X POST "$B/api/mcp" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' 2>/dev/null)
-if echo "$TL" | python -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if len(d['result']['tools'])>0 else 1)" 2>/dev/null; then
-  ok "tools/list returns tools ANONYMOUSLY ($(echo "$TL" | python -c 'import json,sys; print(len(json.load(sys.stdin)["result"]["tools"]))') tools)"
+if echo "$TL" | "$PY" -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if len(d['result']['tools'])>0 else 1)" 2>/dev/null; then
+  ok "tools/list returns tools ANONYMOUSLY ($(echo "$TL" | "$PY" -c 'import json,sys; print(len(json.load(sys.stdin)["result"]["tools"]))') tools)"
 else
   bad "tools/list is empty or gated - your execution surface is invisible"
 fi
@@ -66,7 +67,7 @@ echo "Layer 6 - API as product"
 check_json  "/openapi.json" "d.get('openapi','').startswith('3.') and len(d.get('paths',{}))>0" "OpenAPI 3.x with paths"
 check_json  "/api/v1/posts" "'data' in d" "GET /api/v1/posts is TOKENLESS"
 PJ=$(curl -s -X POST "$B/api/v1/posts" -H 'content-type: application/json' -d '{"text":"x"}')
-if echo "$PJ" | python -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('remedy') else 1)" 2>/dev/null; then
+if echo "$PJ" | "$PY" -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('remedy') else 1)" 2>/dev/null; then
   ok "errors carry a remedy field"
 else
   bad "errors have no remedy - agents will retry forever"

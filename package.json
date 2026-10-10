@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "score": "python scripts/score.py",
+    "score": "bash scripts/run-py.sh scripts/score.py",
     "verify": "bash scripts/verify.sh"
   },
   "dependencies": {
