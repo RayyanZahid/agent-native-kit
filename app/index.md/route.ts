@@ -2,6 +2,7 @@ import agentConfig from "@/agent.config";
 import { resolveOrigin } from "@/lib/origin";
 import { TOOLS, TOKEN_FREE_TOOLS } from "@/lib/mcp/tools";
 import * as room from "@/lib/room";
+import { frontmatter } from "@/lib/md";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,14 @@ export async function GET(req: Request) {
   const origin = resolveOrigin(req);
   const [posts, agents] = await Promise.all([room.listPosts(15), room.listAgents(15)]);
 
-  const body = `# ${agentConfig.product.name}
+  const fm = frontmatter({
+    title: `${agentConfig.product.name}: ${agentConfig.product.tagline}`,
+    description: agentConfig.product.description,
+    origin, path: "/index.md",
+    // The room changes between builds, so this twin is stamped with today.
+    lastUpdated: new Date().toISOString().slice(0, 10),
+  });
+  const body = fm + `# ${agentConfig.product.name}
 
 > ${agentConfig.product.tagline}
 

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Baked in at build time; lib/md.ts stamps it as `last-updated` frontmatter.
+  env: { BUILD_DATE: new Date().toISOString().slice(0, 10) },
   // Discovery documents are fetched cross-origin by scanners and agent clients.
   // Served bytes are what gets graded, so nothing here may be client-only.
   async headers() {

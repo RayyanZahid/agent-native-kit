@@ -1,6 +1,7 @@
 import { resolveOrigin } from "@/lib/origin";
 import agentConfig from "@/agent.config";
 import { SCOPES } from "@/lib/scopes";
+import { frontmatter } from "@/lib/md";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,12 @@ export function GET(req: Request) {
   // it by name, and a heading of "Agent authentication" failed the check while
   // the document underneath was already correct. Build to the grader's PASS
   // string, not to the check's title.
-  const body = `# Auth.md — agent authentication
+  const fm = frontmatter({
+    title: `${agentConfig.product.name}: agent authentication (Auth.md)`,
+    description: "How an agent gets a human-approved bearer token: the RFC 8628 device-code flow, scopes, and recovery.",
+    origin, path: "/auth.md",
+  });
+  const body = fm + `# Auth.md — agent authentication
 
 ${agentConfig.product.name} uses the **RFC 8628 Device Authorization Grant**.
 
