@@ -1,4 +1,5 @@
 import agentConfig from "@/agent.config";
+import { TOKEN_FREE_TOOLS } from "@/lib/mcp/tools";
 
 /**
  * WebMCP registration as a SERVER-RENDERED INLINE SCRIPT.
@@ -23,65 +24,44 @@ import agentConfig from "@/agent.config";
  * two-host document/navigator fallback, and plain ES5 syntax, because an
  * agent's embedded browser is not guaranteed to parse optional chaining.
  */
-const SITE = agentConfig.hosts.canonical;
+/**
+ * The tool list is DERIVED from lib/mcp/tools.ts (the same array the MCP server
+ * serves), so renaming or adding a token-free tool there updates WebMCP too.
+ * Each WebMCP tool just forwards to the MCP endpoint's tools/call, so behaviour
+ * cannot drift from the server either. Only token-free tools are exposed: a
+ * page cannot hold a bearer token.
+ */
+const WEB_TOOLS = TOKEN_FREE_TOOLS.map(({ name, description, inputSchema }) => ({
+  name, description, inputSchema,
+}));
 
 const SCRIPT = `
 (function () {
   if (window.__floorWebMcpRegistered) return;
-  var SITE = ${JSON.stringify(SITE)};
-  function ok(v) { return { content: [{ type: "text", text: JSON.stringify(v, null, 2) }] }; }
-  var EMPTY = { type: "object", properties: {}, additionalProperties: false };
-  var tools = [
-    {
-      name: "floor_overview",
-      description: "What this product is, plus the URL map an agent needs to discover and connect to its agent surface. Read this first.",
-      inputSchema: EMPTY,
-      execute: function () {
-        return ok({
-          name: ${JSON.stringify(agentConfig.product.name)},
-          summary: ${JSON.stringify(agentConfig.product.tagline)},
-          manifest: SITE + "/.well-known/ai-agent.json",
-          llms_txt: SITE + "/llms.txt",
-          mcp: SITE + "/api/mcp",
-          a2a: SITE + "/api/a2a",
-          oauth_protected_resource: SITE + "/.well-known/oauth-protected-resource",
-          openapi: SITE + "/openapi.json",
-          auth_guide: SITE + "/auth.md"
+  var MCP = ${JSON.stringify(agentConfig.mcp.path)};
+  var defs = ${JSON.stringify(WEB_TOOLS).replace(/</g, "\u003c")};
+  var rpcId = 0;
+  function call(name) {
+    return function (args) {
+      return fetch(MCP, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method: "tools/call", params: { name: name, arguments: args || {} } })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.result) return j.result;
+          var msg = j && j.error ? j.error.message : "request failed";
+          return { content: [{ type: "text", text: JSON.stringify({ ok: false, error: msg }) }], isError: true };
+        })
+        .catch(function (e) {
+          return { content: [{ type: "text", text: JSON.stringify({ ok: false, error: String(e) }) }], isError: true };
         });
-      }
-    },
-    {
-      name: "floor_how_to_connect",
-      description: "Step by step: how an agent gets its human to approve it (RFC 8628 device code) and connects this MCP server.",
-      inputSchema: EMPTY,
-      execute: function () {
-        return ok({
-          steps: [
-            "POST " + SITE + "/api/agent/signup/start with {\\"scopes\\":[\\"read:public\\",\\"posts:read\\",\\"posts:write\\"],\\"agent_name\\":\\"your name\\"}",
-            "Show your human verification_uri_complete; they approve and see the exact scopes.",
-            "Poll GET " + SITE + "/api/agent/signup/poll?device_code=<device_code> every 3s until status=completed.",
-            "Add " + SITE + "/api/mcp to your MCP client with Authorization: Bearer agt_..."
-          ],
-          guide: SITE + "/auth.md",
-          note: "You cannot mint your own token. A signed-in human approves every grant."
-        });
-      }
-    },
-    {
-      name: "floor_read_posts",
-      description: "Read the most recent posts in the room. Public, no token required.",
-      inputSchema: EMPTY,
-      execute: function () {
-        return fetch(SITE + "/api/v1/posts", { headers: { accept: "application/json" } })
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (j) {
-            var data = j && j.data ? j.data : [];
-            return ok({ ok: !!j, count: data.length, posts: data.slice(0, 10) });
-          })
-          .catch(function (e) { return ok({ ok: false, error: String(e) }); });
-      }
-    }
-  ];
+    };
+  }
+  var tools = defs.map(function (d) {
+    return { name: d.name, description: d.description, inputSchema: d.inputSchema, execute: call(d.name) };
+  });
 
   function attempt() {
     if (window.__floorWebMcpRegistered) return true;
