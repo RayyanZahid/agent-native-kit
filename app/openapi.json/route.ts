@@ -138,6 +138,87 @@ export function GET(req: Request) {
           },
         },
       },
+      // The signup flow and feedback live under /api/agent, not /api/v1, so
+      // each carries its own `servers` override rather than a misleading path.
+      "/agent/signup/start": {
+        servers: [{ url: `${origin}/api` }],
+        post: {
+          operationId: "startSignup", summary: "Start a device-code signup (RFC 8628)",
+          description: "Tokenless. Ask for scopes; get a device_code and a user_code, never a token. Show the human `verification_uri_complete`.",
+          security: [{}],
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: { type: "object", required: ["scopes"], properties: {
+              scopes: { type: "array", minItems: 1, items: { type: "string", enum: SCOPES }, description: "The fewest scopes you need." },
+              agent_name: { type: "string", description: "Shown to the human on the approval page." },
+            } } } },
+          },
+          responses: {
+            "200": { description: "Device flow started", content: { "application/json": { schema: { type: "object", properties: {
+              device_code: { type: "string" }, user_code: { type: "string" },
+              verification_uri: { type: "string", format: "uri" }, verification_uri_complete: { type: "string", format: "uri" },
+              expires_in: { type: "integer" }, interval: { type: "integer" },
+              scopes: { type: "array", items: { type: "string" } },
+            } } } } },
+            "400": { $ref: "#/components/responses/Problem" },
+          },
+        },
+      },
+      "/agent/signup/poll": {
+        servers: [{ url: `${origin}/api` }],
+        get: {
+          operationId: "pollSignup", summary: "Poll for the approved token",
+          description: "Tokenless. Poll every 3 seconds. 202 means the human has not approved yet. The token is returned exactly once.",
+          security: [{}],
+          parameters: [{ name: "device_code", in: "query", required: true, description: "The device_code from startSignup.", schema: { type: "string" } }],
+          responses: {
+            "200": { description: "Approved", content: { "application/json": { schema: { type: "object", properties: {
+              status: { type: "string", const: "completed" }, access_token: { type: "string" }, token_type: { type: "string", const: "Bearer" },
+              scopes: { type: "array", items: { type: "string" } }, human: { type: "string" },
+            } } } } },
+            "202": { description: "Still pending" },
+            "400": { $ref: "#/components/responses/Problem" },
+          },
+        },
+      },
+      "/agent/signup/complete": {
+        servers: [{ url: `${origin}/api` }],
+        post: {
+          operationId: "completeSignup", summary: "Human approval step (not for agents)",
+          description: "Called by the /approve page when a signed-in human approves a user_code. An agent cannot approve itself and should never call this.",
+          security: [{}],
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: { type: "object", required: ["user_code"], properties: {
+              user_code: { type: "string", description: "The code shown to the human, e.g. ABCD-2345." },
+              human_label: { type: "string", description: "Who is approving." },
+            } } } },
+          },
+          responses: {
+            "200": { description: "Approved" },
+            "400": { $ref: "#/components/responses/Problem" },
+            "404": { $ref: "#/components/responses/Problem" },
+          },
+        },
+      },
+      "/agent/feedback": {
+        servers: [{ url: `${origin}/api` }],
+        post: {
+          operationId: "sendFeedback", summary: "Report a broken or drifted surface",
+          description: "Tokenless on purpose: an agent that cannot authenticate is the one with something to report.",
+          security: [{}],
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: { type: "object", required: ["problem"], properties: {
+              problem: { type: "string", description: "What went wrong." },
+              url: { type: "string", description: "The URL you tried." },
+              agent: { type: "string", description: "Your name." },
+              expected: { type: "string", description: "What you expected instead." },
+            } } } },
+          },
+          responses: { "200": { description: "Logged" }, "400": { $ref: "#/components/responses/Problem" } },
+        },
+      },
       "/health": {
         get: {
           operationId: "getHealth", summary: "Health and storage mode",

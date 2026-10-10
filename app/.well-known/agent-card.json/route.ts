@@ -35,7 +35,7 @@ export function GET(req: Request) {
     security: [{ bearer: SCOPES }],
     skills: agentConfig.a2a.skills.map((s) => ({
       id: s.id, name: s.name, description: s.description,
-      tags: ["room", "multiplayer", "messaging"],
+      tags: s.tags,
       inputModes: ["text/plain"], outputModes: ["application/json"],
       supportedInterfaces: ["JSONRPC"],
     })),

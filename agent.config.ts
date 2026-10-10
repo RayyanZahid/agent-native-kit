@@ -42,7 +42,11 @@ export const agentConfig = {
     version: "1.0.0",
     license: "MIT",
     author: "Immersive Commons",
-    contact: "hello@example.com",
+    /** TODO: replace. `npm run verify` WARNs while this still contains "TODO-".
+     *  It is published in ai-agent.json, openapi.json and the recovery block. */
+    contact: "TODO-your-contact@example.com",
+    /** Free-form tags for the agent-skills index. Describe YOUR product. */
+    tags: ["agent-native", "mcp", "a2a", "multiplayer"],
   },
 
   /**
@@ -72,21 +76,23 @@ export const agentConfig = {
 
   /**
    * SCOPE VOCABULARY. Format `<noun>:<verb>`. NOT hierarchical on purpose:
-   * `posts:write` does not imply `posts:read`. A caller asks for both if it
-   * needs both.
+   * `messages:write` does not imply `messages:read`. A caller asks for both if
+   * it needs both.
+   *
+   * EVERY SCOPE HERE IS REQUIRED BY AT LEAST ONE TOOL (see lib/mcp/tools.ts).
+   * Every discovery document advertises this whole list, so a scope no tool
+   * checks is a permission vocabulary that promises something nothing enforces.
+   * `npm run verify` warns if a scope is advertised but no tool requires it.
    *
    * Explicitness is the feature. A hierarchy means the human approving a mint
    * request cannot see what they are actually granting, which defeats the only
    * part of this flow that provides real safety.
    */
   scopes: {
-    "read:public": "Read anything already public. Safe to grant broadly.",
     "agents:read": "List the agents in the room and read their profiles.",
-    "posts:read": "Read the room's posts.",
     "posts:write": "Post to the room as the human who approved this token.",
     "messages:read": "Read direct messages sent to this agent.",
     "messages:write": "Send a direct message to another agent in the room.",
-    "admin:moderate": "Remove posts. Never in a default grant.",
   },
 
   /**
@@ -94,11 +100,9 @@ export const agentConfig = {
    * entry here rather than silently inheriting everything (or nothing).
    */
   tiers: {
-    anonymous: ["read:public"],
+    anonymous: [],
     member: [
-      "read:public",
       "agents:read",
-      "posts:read",
       "posts:write",
       "messages:read",
       "messages:write",
@@ -128,8 +132,8 @@ export const agentConfig = {
     path: "/api/a2a",
     authenticated: true,
     skills: [
-      { id: "post-to-room", name: "Post to the room", description: "Publish a post on behalf of my human." },
-      { id: "relay-message", name: "Relay a message", description: "Accept a direct message for my human and reply." },
+      { id: "post-to-room", name: "Post to the room", description: "Publish a post on behalf of my human.", tags: ["posting", "room"] },
+      { id: "relay-message", name: "Relay a message", description: "Accept a direct message for my human and reply.", tags: ["messaging", "multiplayer"] },
     ],
   },
 

@@ -94,7 +94,7 @@ export const TOOLS: Tool[] = [
     rateClass: "public",
     handler: async ({ origin }) => ({
       steps: [
-        `POST ${origin}/api/agent/signup/start with {"scopes":["read:public","posts:read","posts:write"],"agent_name":"your name"}`,
+        `POST ${origin}/api/agent/signup/start with {"scopes":["posts:write"],"agent_name":"your name"}`,
         "Show your human verification_uri_complete. They approve while signed in; they see the exact scope list.",
         `Poll GET ${origin}/api/agent/signup/poll?device_code=<device_code> every 3s until status=completed.`,
         `Add ${origin}/api/mcp to your MCP client with header: Authorization: Bearer agt_...`,

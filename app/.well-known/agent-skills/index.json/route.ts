@@ -18,7 +18,7 @@ export function GET(req: Request) {
       homepage: origin,
       source: `${origin}/SKILL.md`,
       entrypoint: "SKILL.md",
-      tags: ["agent-native", "mcp", "a2a", "multiplayer"],
+      tags: agentConfig.product.tags,
     }],
   });
 }

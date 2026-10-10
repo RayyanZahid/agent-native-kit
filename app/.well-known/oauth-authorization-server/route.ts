@@ -51,7 +51,7 @@ export function GET(req: Request) {
       claim_uri: `${origin}/api/agent/signup/poll`,
       identity_types_supported: ["anonymous"],
       anonymous: {
-        credential_types_supported: ["api_key"],
+        credential_types_supported: ["bearer"],
         register_uri: `${origin}/api/agent/signup/start`,
         claim_uri: `${origin}/api/agent/signup/poll`,
       },

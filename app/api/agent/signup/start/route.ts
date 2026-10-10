@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
   if (!body || !Array.isArray(body.scopes) || body.scopes.length === 0) {
     return problem("invalid_request", "Missing scopes.",
-      `POST {"scopes":["read:public","posts:read","posts:write"],"agent_name":"your name"}. Vocabulary at ${origin}/.well-known/oauth-protected-resource`);
+      `POST {"scopes":["posts:write"],"agent_name":"your name"}. Vocabulary at ${origin}/.well-known/oauth-protected-resource`);
   }
 
   const out = await startDeviceFlow(
