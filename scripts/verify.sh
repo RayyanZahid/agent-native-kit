@@ -70,6 +70,20 @@ if [ "$(curl -sf "$B/llms.txt" | wc -c)" -lt 30000 ]; then ok "llms.txt under th
 check_ctype "/auth.md" "text/markdown" "auth.md served as text/markdown"
 check_ctype "/pricing.md" "text/markdown" "pricing.md exists (required even when free)"
 check_ctype "/SKILL.md" "text/markdown" "SKILL.md served as text/markdown (the agent entry point)"
+if curl -sf "$B/llms.txt" | grep -Eq '\]\(https?://'; then ok "llms.txt carries markdown links"; else bad "llms.txt has no markdown links"; fi
+for MD in /SKILL.md /auth.md /pricing.md /index.md; do
+  FM=$(curl -sf "$B$MD" | head -8)
+  if echo "$FM" | head -1 | grep -q '^---' && for K in title description canonical last-updated; do echo "$FM" | grep -q "^$K:" || exit 1; done; then
+    ok "$MD opens with frontmatter (title, description, canonical, last-updated)"
+  else
+    bad "$MD is missing frontmatter (title, description, canonical, last-updated)"
+  fi
+done
+HOME_HTML=$(curl -sf "$B/")
+if echo "$HOME_HTML" | grep -q 'application/ld+json'; then ok "homepage has JSON-LD in the served HTML"; else bad "homepage has no JSON-LD"; fi
+for M in 'rel="canonical"' 'property="og:image"' 'property="og:type"'; do
+  if echo "$HOME_HTML" | grep -q "$M"; then ok "homepage head has $M"; else bad "homepage head is missing $M"; fi
+done
 # Every door should lead to SKILL.md first: homepage HTML, llms.txt, manifest.
 if curl -sf "$B/" | grep -q 'SKILL.md'; then ok "homepage HTML points agents at SKILL.md"; else bad "homepage HTML does not mention SKILL.md"; fi
 if curl -sf "$B/llms.txt" | grep -q 'SKILL.md'; then ok "llms.txt points agents at SKILL.md"; else bad "llms.txt does not mention SKILL.md"; fi

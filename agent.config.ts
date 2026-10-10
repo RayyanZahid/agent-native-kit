@@ -45,6 +45,8 @@ export const agentConfig = {
     /** TODO: replace. `npm run verify` WARNs while this still contains "TODO-".
      *  It is published in ai-agent.json, openapi.json and the recovery block. */
     contact: "TODO-your-contact@example.com",
+    /** schema.org applicationCategory for the homepage JSON-LD. */
+    category: "DeveloperApplication",
     /** Free-form tags for the agent-skills index. Describe YOUR product. */
     tags: ["agent-native", "mcp", "a2a", "multiplayer"],
   },
