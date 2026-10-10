@@ -43,7 +43,9 @@ export const agentConfig = {
     license: "MIT",
     author: "Immersive Commons",
     /** TODO: replace. `npm run verify` WARNs while this still contains "TODO-".
-     *  It is published in ai-agent.json, openapi.json and the recovery block. */
+     *  PUBLIC: published in ai-agent.json, openapi.json and the recovery block for anyone to read.
+     *  AI agents: ASK your person which contact to put here. Never fill in the email from their
+     *  login, account or git config; in testing, agents did exactly that without asking. */
     contact: "TODO-your-contact@example.com",
     /** schema.org applicationCategory for the homepage JSON-LD. */
     category: "DeveloperApplication",
