@@ -26,18 +26,23 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null) as
-    { user_code?: unknown; human_label?: unknown; decision?: unknown } | null;
+    { user_code?: unknown; human_label?: unknown; name?: unknown; decision?: unknown } | null;
 
   if (!body || typeof body.user_code !== "string") {
     return problem("invalid_request", "Missing user_code.", 'POST {"user_code":"ABCD-2345","human_label":"Your Name"}');
   }
 
-  const label = typeof body.human_label === "string" && body.human_label.trim()
-    ? body.human_label.trim().slice(0, 60)
-    : "anonymous human";
+  // The typed name, or `name` as a courtesy to callers that guess that field.
+  const typed = [body.human_label, body.name].find((v): v is string => typeof v === "string" && v.trim() !== "");
+  const typedName = typed ? typed.trim().slice(0, 40) : "anonymous human";
+
+  // Until step 4 (a real login) nothing proves who typed this, so the record
+  // SAYS so. When you wire your session identity, replace `label` with the
+  // session's name and drop the suffix: that is what makes it verified.
+  const label = `${typedName} (unverified, no login yet)`;
 
   // TODO(you): replace this with your session identity. See the block above.
-  const humanId = `h_${label.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 32)}`;
+  const humanId = `h_${typedName.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 32)}`;
 
   const out = await approveDeviceFlow(body.user_code, humanId, label, "member");
   if (!out.ok) {
@@ -46,7 +51,7 @@ export async function POST(req: Request) {
   }
 
   return Response.json(
-    { ok: true, approved_for: out.agentName, granted: out.granted,
+    { ok: true, approved_for: out.agentName, granted: out.granted, recorded_as: label, verified: false,
       note: "The agent's next poll will receive its token. You can revoke it later." },
     { headers: { "cache-control": "no-store" } },
   );

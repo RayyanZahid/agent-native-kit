@@ -52,7 +52,8 @@ export default async function ApprovePage({
       </div>
 
       <p style={{ color: "var(--dim)", marginTop: 32 }}>
-        This reference build trusts the name you type, because the kit ships without an
+        This reference build trusts the name you type and records it as
+        &quot;unverified, no login yet&quot;: anyone who has the code can approve it, because the kit ships without an
         opinion about your identity provider. Before you run anything real, wire your auth
         into <code>app/api/agent/signup/complete/route.ts</code> and derive identity from
         the session instead. The comment in that file shows the Clerk version.

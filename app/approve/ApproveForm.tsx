@@ -5,7 +5,7 @@ import { useState } from "react";
 type Result =
   | { kind: "idle" }
   | { kind: "working" }
-  | { kind: "ok"; agentName: string; granted: string[] }
+  | { kind: "ok"; agentName: string; granted: string[]; recordedAs: string }
   | { kind: "error"; message: string; remedy?: string };
 
 export function ApproveForm({ initialCode }: { initialCode: string }) {
@@ -27,7 +27,7 @@ export function ApproveForm({ initialCode }: { initialCode: string }) {
         setRes({ kind: "error", message: j.title ?? "Could not approve.", remedy: j.remedy });
         return;
       }
-      setRes({ kind: "ok", agentName: j.approved_for, granted: j.granted ?? [] });
+      setRes({ kind: "ok", agentName: j.approved_for, granted: j.granted ?? [], recordedAs: j.recorded_as ?? name.trim() });
     } catch (err) {
       setRes({ kind: "error", message: String(err) });
     }
@@ -41,6 +41,9 @@ export function ApproveForm({ initialCode }: { initialCode: string }) {
         </p>
         <p style={{ color: "var(--dim)" }}>
           Granted: {res.granted.map((s) => <code key={s} style={{ marginRight: 8 }}>{s}</code>)}
+        </p>
+        <p style={{ color: "var(--dim)" }}>
+          Recorded as: <strong>{res.recordedAs}</strong>
         </p>
         <p style={{ color: "var(--dim)", marginBottom: 0 }}>
           Its next poll receives the token. You can close this page.
