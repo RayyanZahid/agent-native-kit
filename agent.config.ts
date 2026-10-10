@@ -110,16 +110,17 @@ export const agentConfig = {
    * MCP. Remote over Streamable HTTP. Never stdio in production: stdio is a
    * local-dev transport and cannot be reached by a hosted client at all.
    *
-   * `tokenFreeTools` is load-bearing and not obvious. A grader, and any agent
-   * evaluating whether to bother with you, calls `tools/list` ANONYMOUSLY. If
-   * every tool needs a token, that list is empty and your entire execution
-   * surface is invisible to the thing deciding whether to use it. Always
-   * expose at least one genuinely useful tool that needs no auth.
+   * Which tools are token-free is NOT declared here: it is `scope: null` on a
+   * tool in lib/mcp/tools.ts, the one place the server, WebMCP and verify.sh
+   * all read. A grader, and any agent evaluating whether to bother with you,
+   * calls `tools/list` ANONYMOUSLY. If every tool needs a token, that list is
+   * empty and your entire execution surface is invisible to the thing deciding
+   * whether to use it. Always keep at least one genuinely useful `scope: null`
+   * tool.
    */
   mcp: {
     path: "/api/mcp",
     protocolVersion: "2025-06-18",
-    tokenFreeTools: ["floor_overview", "floor_how_to_connect", "floor_read_posts"],
   },
 
   /** A2A. Authenticated by default: open A2A is irreversible once registries cache you. */

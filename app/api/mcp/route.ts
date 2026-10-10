@@ -1,6 +1,6 @@
 import agentConfig from "@/agent.config";
 import { agentGate, hasScope } from "@/lib/auth";
-import { findTool, publicToolList } from "@/lib/mcp/tools";
+import { TOKEN_FREE_TOOLS, findTool, publicToolList } from "@/lib/mcp/tools";
 import { checkRate, rateHeaders } from "@/lib/ratelimit";
 import { resolveOrigin } from "@/lib/origin";
 import * as room from "@/lib/room";
@@ -33,8 +33,8 @@ export async function POST(req: Request) {
       capabilities: { tools: { listChanged: false } },
       serverInfo: { name: agentConfig.product.name, version: agentConfig.product.version },
       instructions:
-        `Call floor_overview first for the URL map. floor_overview, ` +
-        `floor_how_to_connect and floor_read_posts need no token. ` +
+        `Token-free tools (no token needed): ${TOKEN_FREE_TOOLS.map((t) => t.name).join(", ")}. ` +
+        `Start with ${TOKEN_FREE_TOOLS[0]?.name ?? "tools/list"} for the URL map. ` +
         `Everything else needs a human-approved token: see ${origin}/auth.md`,
     });
   }
